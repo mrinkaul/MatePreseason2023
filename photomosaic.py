@@ -1,24 +1,25 @@
 import cv2
 import imutils
 import utils
+import numpy as np
+import argparse
 
+image = cv2.imread("resources\\plainbox2.jpg")
 
-image = cv2.imread("resources\\photomosaic1.JPG")
-#
-resized_image = utils.resizeImage(image, 0.1)
+resized_image = utils.resizeImage(image, 0.69)
 gray_image = utils.grayConvert(resized_image)
-noise_reduced = utils.noiseRemoval(gray_image, 10, 40, 40)
+noise_reduced = utils.noiseRemoval(gray_image, 20,20,20)
 utils.drawAndPauseImage(noise_reduced, "Noise Reduced")
-canny_edge = utils.CannyEdge(noise_reduced, 30, 200)
+canny_edge = utils.CannyEdge(noise_reduced, 100, 200)
 utils.drawAndPauseImage(canny_edge, "Canny Edge")
 
 
 contours = cv2.findContours(canny_edge.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 contours = imutils.grab_contours(contours)
 contours = sorted(contours, key=cv2.contourArea, reverse=True)[:50]
-rectangleContour = None
+rectangleContourList = []
 
-countour_number = 0;    `
+contour_number = 0;
 for c in contours:
      perim = cv2.arcLength(c, True)
      #print("For contour ", countour_number, " perim is ", perim)
@@ -44,21 +45,32 @@ for c in contours:
      else:
          type = 'Circle'
 
-     print("contour ", countour_number, "is type ", type, " perim is ", perim, " area is ", area)
+     print("contour ", contour_number, "is type ", type, " perim is ", perim, " area is ", area)
      if(type=='Rectangle' or type=='Pentagon'):
         temp_image = cv2.drawContours(resized_image.copy(), [approx], 0, (0, 255, 0), 3)
-        utils.drawAndPauseImage(temp_image, "Temp Contour "+str(countour_number))
+        #utils.drawAndPauseImage(temp_image, "Temp Contour "+str(contour_number))
 
 
-     countour_number = countour_number + 1
+     contour_number = contour_number + 1
      if len(approx) == 4:
-         rectangleContour = approx
+         rectangleContourList.append(approx)
+         print("Added contour ", contour_number, " to rectangularContourList")
          #break
 
 # If we get here, hopefully we found a rectangle
-if rectangleContour.any():
-    cntrim = cv2.drawContours(resized_image.copy(), [rectangleContour], -1, (0, 255, 0), 3)
-    utils.drawAndPauseImage(cntrim, "Final Rectangle")
+if len(rectangleContourList) >= 3:
+    print("Found ", len(rectangleContourList), " rectangles")
+    for r in [0, 1, 2]:
+        cntrim = cv2.drawContours(resized_image.copy(), [rectangleContourList[r]], -1, (0, 255, 0), 3)
+        utils.drawAndPauseImage(cntrim, "Rectangle " + str(r))
+
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument("-i", "--image", help="path to the image file")
+    # ap.add_argument("-c", "--coords",help="comma seperated list of source points")
+    # args = vars(ap.parse_args())
+    # img =canny_edge
+    # pts = np.array(eval(args["coords"]), dtype="float32")
+    # warped = utils.fourPointTransf(img, pts)
 else:
     print('Did not find any rectangle')
 
