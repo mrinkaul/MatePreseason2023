@@ -5,13 +5,16 @@ import numpy as np
 import argparse
 
 image = cv2.imread("resources\\plainbox2.jpg")
+print(image.shape)
 
-resized_image = utils.resizeImage(image, 0.69)
+factor = 0.69
+resized_image = utils.resizeImage(image, factor)
 gray_image = utils.grayConvert(resized_image)
 noise_reduced = utils.noiseRemoval(gray_image, 20,20,20)
 utils.drawAndPauseImage(noise_reduced, "Noise Reduced")
 canny_edge = utils.CannyEdge(noise_reduced, 100, 200)
 utils.drawAndPauseImage(canny_edge, "Canny Edge")
+
 
 
 contours = cv2.findContours(canny_edge.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -61,16 +64,14 @@ for c in contours:
 if len(rectangleContourList) >= 3:
     print("Found ", len(rectangleContourList), " rectangles")
     for r in [0, 1, 2]:
-        cntrim = cv2.drawContours(resized_image.copy(), [rectangleContourList[r]], -1, (0, 255, 0), 3)
+        rectCoordinates = rectangleContourList[r]
+        cntrim = cv2.drawContours(resized_image.copy(), [rectCoordinates], -1, (0, 255, 0), 3)
         utils.drawAndPauseImage(cntrim, "Rectangle " + str(r))
-
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("-i", "--image", help="path to the image file")
-    # ap.add_argument("-c", "--coords",help="comma seperated list of source points")
-    # args = vars(ap.parse_args())
-    # img =canny_edge
-    # pts = np.array(eval(args["coords"]), dtype="float32")
-    # warped = utils.fourPointTransf(img, pts)
+        print(rectCoordinates)
+        print(rectCoordinates.reshape(4, 2))
+        print(utils.order_points(rectCoordinates.reshape(4, 2)))
+        transformedImage = utils.four_point_transform(image, rectCoordinates.reshape(4, 2) / factor)
+        utils.drawAndPauseImage(transformedImage, "Transformed Rectangle " + str(r))
 else:
     print('Did not find any rectangle')
 
